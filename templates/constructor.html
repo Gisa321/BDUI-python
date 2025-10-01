@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AvitoBDUI — Конструктор</title>
+  <style>
+    .error-message{
+      width: 200px;
+    }
+    /* Базовые стили */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      height: 60px;
+    }
+    
+    .header__logo img {
+      height: 30px;
+    }
+    
+    .header__actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .btn--primary {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    
+    .btn--secondary {
+      background: #f8f9fa;
+      border-color: #ddd;
+    }
+    
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #007bff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    /* Стили для основного контейнера */
+    .main-container {
+      display: flex;
+      height: calc(100vh - 60px);
+      gap: 10px;
+      padding: 10px;
+    }
+    
+    .editor-panel {
+      /* flex: 1; */
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      min-width: 700px;
+    }
+    
+    .preview-panel {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      min-width: 400px;
+    }
+    
+    .panel-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      background: #fafafa;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      color: #333;
+      height: 60px;
+    }
+    .panel-header-preview {
+      border-bottom: 1px solid #e0e0e0;
+      background: #fafafa;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      color: #333;
+      height: 60px;
+    }
+    
+    .editor-container {
+      flex: 1;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    #json-editor {
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 20px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    
+    .preview-container {
+      flex: 1;
+      /* padding: 20px; */
+      overflow: auto;
+      background: #f8f9fa;
+    }
+    
+    .preview-content {
+      min-height: 100%;
+      background: white;
+      /* border-radius: 4px; */
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    
+    .editor-actions {
+      padding: 15px 20px;
+      border-top: 1px solid #e0e0e0;
+      background: #fafafa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .btn-editor {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .btn-editor:hover {
+      background: #f0f0f0;
+    }
+    
+    .btn-editor.primary {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    
+    .btn-editor.primary:hover {
+      background: #0056b3;
+    }
+    
+    .error-message {
+      color: #dc3545;
+      font-size: 12px;
+      margin-left: auto;
+    }
+    
+    .success-message {
+      color: #28a745;
+      font-size: 12px;
+    }
+    
+    /* Стили для превью */
+    #preview-area {
+      width: 100%;
+      min-height: 400px;
+      padding: 20px;
+    }
+    
+    .empty-preview {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+    }
+    
+    .preview-controls {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border-radius: 20px;
+    }
+    
+    .scale-btn {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .scale-btn.active {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__logo">
+         <img src="../ref/logo.jpg" alt="not found">
+      </div>
+
+
+      <div class="header__actions">
+        <input type="file" id="import-file" accept="application/json" style="display:none"/>
+        <button id="import-json" class="btn btn--secondary">Импорт JSON</button>
+        <button id="export-json" class="btn btn--secondary">Экспорт JSON</button>
+        <button id="create-ad" class="btn btn--primary">Создать объявление</button>
+        <div class="user-avatar">A</div>
+      </div>
+    </header>
+
+    <!-- Main Container с двумя панелями -->
+    <div class="main-container">
+      <!-- Левая панель - редактор JSON -->
+      <div class="editor-panel">
+        <div class="panel-header">
+          JSON Editor
+        </div>
+        <div class="editor-container">
+          <textarea data-text-area-elem id="json-editor" placeholder="Введите JSON структуру здесь...">[
+{
+  "tagName":"div",
+  "textContent":"Hello World!!!",
+  "styles":{
+    "width":"190px",
+    "height":"auto",
+    "background":"lightGreen",
+    "color":"white",
+    "fontSize":"20px",
+    "fontWeight":"1000",
+    "padding":"20px",
+    "border":"3px solid darkGreen",
+    "borderRadius":"20px"
+    
+  }
+}
+]
+
+
+
+
+          </textarea>
+        </div>
+        <div class="editor-actions">
+          <button id="validate-json" class="btn-editor">Проверить JSON</button>
+          <button id="format-json" class="btn-editor">Форматировать</button>
+          <button id="render-json" class="btn-editor primary">Отрендерить</button>
+          <div id="status-message" class="success-message">Готов</div>
+        </div>
+      </div>
+
+      <!-- Правая панель - превью -->
+      <div class="preview-panel">
+        <div class="panel-header-preview">
+          
+          <div class="preview-controls">
+            <div class="preview-scale">
+              Preview
+              <button class="scale-btn" data-scale="0.5">50%</button>
+              <button class="scale-btn" data-scale="0.75">75%</button>
+              <button class="scale-btn active" data-scale="1">100%</button>
+              <button class="scale-btn" data-scale="1.25">125%</button>
+            </div>
+          </div>
+        </div>
+        <div class="preview-container">
+          <div class="preview-content">
+            <div id="preview-area">
+              <div class="empty-preview">
+                <h3>Превью будет отображено здесь</h3>
+                <p>Введите JSON в редакторе и нажмите "Отрендерить"</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const URL = document.URL.split('/')
+    const URI = URL[URL.length - 2] + "/" + URL[URL.length - 1]
+    const pageName = URI.split('/')[0]
+    
+    
+    async function getPagesJSON() {
+        const response = await fetch(`/${pageName}JSON`, {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        })
+
+        const result = await response.json()
+        return [JSON.stringify(result)]
+    }
+
+
+    async function insertJSONToTextArea(){
+        const pageJSON = await getPagesJSON()
+
+        const textEditor = document.querySelector('[data-text-area-elem]')
+
+        textEditor.textContent = pageJSON
+    }
+
+    insertJSONToTextArea()
+
+
+    
+
+    // Упрощенный и рабочий рендерер
+    class JSONRenderer {
+      constructor(previewAreaId) {
+        this.previewArea = document.getElementById(previewAreaId);
+      }
+
+      // Рендерим элемент по конфигу
+      renderElement(config) {
+        if (!config || !config.tagName) {
+          console.warn('Invalid element config:', config);
+          return null;
+        }
+
+        try {
+          // Создаем элемент
+          const element = document.createElement(config.tagName);
+
+          // Устанавливаем свойства
+          if (config.textContent) {
+            element.textContent = config.textContent;
+          }
+
+          if (config.className) {
+            element.className = config.className;
+          }
+
+          if (config.id) {
+            element.id = config.id;
+          }
+
+          // Применяем стили
+          if (config.styles && typeof config.styles === 'object') {
+            Object.keys(config.styles).forEach(styleName => {
+              element.style[styleName] = config.styles[styleName];
+            });
+          }
+
+          // Рекурсивно рендерим детей
+          if (config.childrens && Array.isArray(config.childrens)) {
+            config.childrens.forEach(childConfig => {
+              const childElement = this.renderElement(childConfig);
+              if (childElement) {
+                element.appendChild(childElement);
+              }
+            });
+          }
+
+          return element;
+        } catch (error) {
+          console.error('Error rendering element:', error, config);
+          return null;
+        }
+      }
+
+      // Основной метод рендеринга
+      render(jsonData) {
+        console.log('Starting render with data:', jsonData);
+        
+        // Очищаем превью
+        this.previewArea.innerHTML = '';
+
+        if (!jsonData) {
+          this.previewArea.innerHTML = '<div class="empty-preview"><p>Нет данных для рендеринга</p></div>';
+          return;
+        }
+
+        try {
+          // Если это массив - рендерим все элементы
+          if (Array.isArray(jsonData)) {
+            jsonData.forEach(item => {
+              const element = this.renderElement(item);
+              if (element) {
+                this.previewArea.appendChild(element);
+              }
+            });
+          } 
+          // Если это объект - рендерим его
+          else if (typeof jsonData === 'object') {
+            const element = this.renderElement(jsonData);
+            if (element) {
+              this.previewArea.appendChild(element);
+            }
+          }
+
+          console.log('Render completed successfully');
+        } catch (error) {
+          console.error('Render error:', error);
+          this.previewArea.innerHTML = `
+            <div class="empty-preview" style="color: #dc3545;">
+              <h3>Ошибка рендеринга</h3>
+              <p>${error.message}</p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+      const jsonEditor = document.getElementById('json-editor');
+      const validateBtn = document.getElementById('validate-json');
+      const formatBtn = document.getElementById('format-json');
+      const renderBtn = document.getElementById('render-json');
+      const statusMessage = document.getElementById('status-message');
+
+      // Инициализируем рендерер
+      const renderer = new JSONRenderer('preview-area');
+
+      // Обновляем статус
+      function updateStatus(message, isError = false) {
+        statusMessage.textContent = message;
+        statusMessage.className = isError ? 'error-message' : 'success-message';
+      }
+
+      // Проверка JSON
+      function validateJSON() {
+        try {
+          const json = JSON.parse(jsonEditor.value);
+          updateStatus('✓ JSON валиден');
+          return json;
+        } catch (error) {
+          updateStatus(`✗ Ошибка JSON: ${error.message}`, true);
+          return null;
+        }
+      }
+
+      // Форматирование JSON
+      function formatJSON() {
+        const json = validateJSON();
+        if (json) {
+          jsonEditor.value = JSON.stringify(json, null, 2);
+          updateStatus('✓ JSON отформатирован');
+        }
+      }
+
+      // Рендеринг
+      function renderJSON() {
+        console.log('Render button clicked');
+        const json = validateJSON();
+        if (json) {
+          try {
+            renderer.render(json);
+            updateStatus('✓ Успешно отрендерено');
+          } catch (error) {
+            updateStatus(`✗ Ошибка рендеринга: ${error.message}`, true);
+          }
+        }
+      }
+
+      // Обработчики масштабирования
+      document.querySelectorAll('.scale-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          const scale = parseFloat(this.dataset.scale);
+          document.getElementById('preview-area').style.transform = `scale(${scale})`;
+          document.getElementById('preview-area').style.transformOrigin = 'top left';
+        });
+      });
+
+      // Назначаем обработчики
+      validateBtn.addEventListener('click', validateJSON);
+      formatBtn.addEventListener('click', formatJSON);
+      renderBtn.addEventListener('click', renderJSON);
+    });
+  </script>
+</body>
+</html>
