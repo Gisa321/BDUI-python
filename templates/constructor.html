@@ -320,6 +320,235 @@
   </div>
 
   <script>
+      // js/io-htmlpage.js - ИСПРАВЛЕННАЯ ВЕРСИЯ
+  (() => {
+    function init(){
+      const importBtn = document.getElementById('import-json');
+      const importFile = document.getElementById('import-file');
+      const exportJson = document.getElementById('export-json');
+      const createAdBtn = document.getElementById('create-ad');
+
+      // Экспорт JSON
+      exportJson?.addEventListener('click', () => {
+        const jsonEditor = document.getElementById('json-editor');
+        if (jsonEditor && jsonEditor.value) {
+          try {
+            // Валидируем JSON перед экспортом
+            JSON.parse(jsonEditor.value);
+            downloadText(jsonEditor.value, 'design.json', 'application/json');
+            showToast('Экспортировано в JSON');
+          } catch (error) {
+            showToast('Ошибка в JSON: ' + error.message, true);
+          }
+        } else {
+          showToast('Нет данных для экспорта', true);
+        }
+      });
+
+      // Импорт JSON
+      importBtn?.addEventListener('click', () => importFile.click());
+      importFile?.addEventListener('change', async (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        try{
+          const txt = await f.text();
+          const parsed = JSON.parse(txt);
+          
+          // Валидируем JSON
+          JSON.parse(JSON.stringify(parsed));
+          
+          // Вставляем в редактор
+          const jsonEditor = document.getElementById('json-editor');
+          if (jsonEditor) {
+            jsonEditor.value = JSON.stringify(parsed, null, 2);
+            showToast('Импортировано успешно');
+            
+            // Автоматически рендерим
+            if (window.JSONIntegration && window.JSONIntegration.renderJSON) {
+              setTimeout(() => {
+                window.JSONIntegration.renderJSON();
+              }, 100);
+            }
+          }
+        } catch(err) {
+          console.error(err);
+          showToast('Не удалось импортировать JSON файл', true);
+        } finally {
+          e.target.value = '';
+        }
+      });
+
+      // Создание объявления (базовая функция)
+      createAdBtn?.addEventListener('click', () => {
+        const jsonEditor = document.getElementById('json-editor');
+        if (jsonEditor && jsonEditor.value) {
+          try {
+            const jsonData = JSON.parse(jsonEditor.value);
+            const html = generateAdHTML(jsonData);
+            downloadText(html, 'avito-ad.html', 'text/html');
+            showToast('Объявление создано и скачано');
+          } catch (error) {
+            showToast('Ошибка при создании объявления: ' + error.message, true);
+          }
+        } else {
+          showToast('Нет данных для создания объявления', true);
+        }
+      });
+    }
+
+    // Генерация HTML для объявления
+    function generateAdHTML(jsonData) {
+      const elements = Array.isArray(jsonData) ? jsonData : [jsonData];
+      const elementsHTML = elements.map(element => {
+        const styles = element.styles ? styleObjToInline(element.styles) : '';
+        const tagName = element.tagName || 'div';
+        const content = element.textContent || '';
+        
+        return `<${tagName} style="${styles}">${content}</${tagName}>`;
+      }).join('');
+
+      return `<!DOCTYPE html>
+  <html lang="ru">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Avito Объявление</title>
+      <style>
+          body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: #f7fafc;
+          }
+          .avito-ad-container {
+              max-width: 1200px;
+              margin: 0 auto;
+              background: white;
+              border-radius: 12px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              padding: 20px;
+          }
+      </style>
+  </head>
+  <body>
+      <div class="avito-ad-container">
+          ${elementsHTML}
+      </div>
+  </body>
+  </html>`;
+    }
+
+    // АЛЬТЕРНАТИВНЫЕ МЕТОДЫ СКАЧИВАНИЯ
+    function downloadText(text, filename, type = 'text/plain') {
+      try {
+        // Попробуем стандартный метод с Blob
+        if (typeof Blob !== 'undefined' && URL && URL.createObjectURL) {
+          const blob = new Blob([text], { type });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+        } else {
+          // Fallback метод для старых браузеров
+          fallbackDownload(text, filename, type);
+        }
+      } catch (error) {
+        console.warn('Blob download failed, using fallback:', error);
+        fallbackDownload(text, filename, type);
+      }
+    }
+
+    // Fallback метод скачивания
+    function fallbackDownload(text, filename, type) {
+      try {
+        // Метод с data URL
+        const dataUrl = `data:${type};charset=utf-8,${encodeURIComponent(text)}`;
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('Fallback download also failed:', error);
+        // Последний резервный метод - открыть в новом окне
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(`
+          <html>
+            <head><title>${filename}</title></head>
+            <body>
+              <pre>${text}</pre>
+              <script>
+                document.title = '${filename}';
+                console.log('File content loaded');
+              <\/script>
+            </body>
+          </html>
+        `);
+        showToast('Файл открыт в новом окне. Используйте "Сохранить как..."', false);
+      }
+    }
+
+    function showToast(msg, isError = false) {
+      // Удаляем существующие тосты
+      document.querySelectorAll('.custom-toast').forEach(toast => toast.remove());
+      
+      const t = document.createElement('div');
+      t.className = 'custom-toast';
+      t.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${isError ? '#dc3545' : '#28a745'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 10000;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        max-width: 300px;
+        word-wrap: break-word;
+      `;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      
+      setTimeout(() => { 
+        t.style.opacity = '0';
+        t.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => {
+          if (t.parentNode) {
+            t.parentNode.removeChild(t);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    function styleObjToInline(styles = {}) {
+      if (!styles || typeof styles !== 'object') return '';
+      
+      return Object.entries(styles)
+        .map(([key, value]) => {
+          // Конвертируем camelCase в kebab-case
+          const cssProperty = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+          return `${cssProperty}:${value}`;
+        })
+        .join(';');
+    }
+
+    // Инициализация при загрузке DOM
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+
     const URL = document.URL.split('/')
     const URI = URL[URL.length - 2] + "/" + URL[URL.length - 1]
     const pageName = URI.split('/')[0]

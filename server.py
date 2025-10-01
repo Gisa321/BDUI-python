@@ -8,7 +8,7 @@ app = FastAPI()
 
 
 app.mount('/ref', StaticFiles(directory='ref'))
-app.mount('/templates', StaticFiles(directory='templates'))
+
 
 client = AsyncIOMotorClient('mongodb://127.0.0.1:27017')
 db = client['motorDB']
